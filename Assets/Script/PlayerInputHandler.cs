@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using PinePie.SimpleJoystick;
 
 public class PlayerInputHandler : MonoBehaviour
 {
@@ -16,13 +17,14 @@ public class PlayerInputHandler : MonoBehaviour
     [SerializeField] private string sprint = "Sprint";
     [SerializeField] private string rotateObject = "RotateObject";
 
+    [Header("Mobile Joystick")]
+    [SerializeField] private JoystickController joystick;
+
     private InputAction movementAction;
     private InputAction rotationAction;
     private InputAction jumpAction;
     private InputAction sprintAction;
     private InputAction rotateObjectAction;
-
-
 
     public Vector2 MovementInput { get; private set; }
     public Vector2 RotationInput { get; private set; }
@@ -45,28 +47,58 @@ public class PlayerInputHandler : MonoBehaviour
 
     private void SubscribeActionValuesToInputEvents()
     {
-        movementAction.performed += inputInfo => MovementInput = inputInfo.ReadValue<Vector2>();
-        movementAction.canceled += inputInfo => MovementInput = Vector2.zero;
+        // Keyboard
+        movementAction.performed += ctx =>
+        {
+            if (joystick == null)
+                MovementInput = ctx.ReadValue<Vector2>();
+        };
 
-        rotationAction.performed += inputInfo => RotationInput = inputInfo.ReadValue<Vector2>();
-        rotationAction.canceled += inputInfo => RotationInput = Vector2.zero;
+        movementAction.canceled += ctx =>
+        {
+            if (joystick == null)
+                MovementInput = Vector2.zero;
+        };
 
-        jumpAction.performed += inputInfo => JumpTriggered = true;
-        jumpAction.canceled += inputInfo => JumpTriggered = false;
+        // Mouse Look
+        rotationAction.performed += ctx =>
+            RotationInput = ctx.ReadValue<Vector2>();
 
-        sprintAction.performed += inputInfo => SprintTriggered = true;
-        sprintAction.canceled += inputInfo => SprintTriggered = false;
+        rotationAction.canceled += ctx =>
+            RotationInput = Vector2.zero;
 
-        rotateObjectAction.performed += inputInfo => RotateObjectTriggered = true;
-        rotateObjectAction.canceled += inputInfo => RotateObjectTriggered = false;
+        // Jump
+        jumpAction.performed += ctx =>
+            JumpTriggered = true;
 
+        jumpAction.canceled += ctx =>
+            JumpTriggered = false;
+
+        // Sprint
+        sprintAction.performed += ctx =>
+            SprintTriggered = true;
+
+        sprintAction.canceled += ctx =>
+            SprintTriggered = false;
+
+        // Rotate Object
+        rotateObjectAction.performed += ctx =>
+            RotateObjectTriggered = true;
+
+        rotateObjectAction.canceled += ctx =>
+            RotateObjectTriggered = false;
     }
 
-    /// <summary>
-    /// Atomically consumes the toggle flag. Returns true if the toggle was set and clears it.
-    /// This prevents external classes from needing write access to the property setter.
-    /// </summary>
+private void Update()
+{
+    if (joystick != null)
+    {
+        MovementInput = joystick.InputDirection;
 
+        // Matikan mouse look ketika memakai joystick
+        RotationInput = Vector2.zero;
+    }
+}
 
     private void OnEnable()
     {
